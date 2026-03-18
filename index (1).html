@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="PDF Vault"/>
+<meta name="theme-color" content="#e8a020"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
+<title>PDF Vault</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1916;
+    --card: #211f1c;
+    --border: #2e2b26;
+    --accent: #e8a020;
+    --accent2: #c45d1a;
+    --text: #f0ebe2;
+    --muted: #7a7468;
+    --danger: #c03a2a;
+    --success: #3a8c5c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 150px;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.5;
+  }
+
+  header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 20px; height: 20px; fill: #fff; }
+
+  h1 { font-family: 'DM Serif Display', serif; font-size: 22px; letter-spacing: -0.3px; }
+  h1 span { color: var(--accent); font-style: italic; }
+
+  .storage-badge {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  main { padding: 20px 16px 100px; max-width: 480px; margin: 0 auto; }
+
+  /* Install banner */
+  .install-banner {
+    background: linear-gradient(135deg, rgba(232,160,32,0.12), rgba(196,93,26,0.08));
+    border: 1px solid rgba(232,160,32,0.3);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.3s ease;
+  }
+  .install-banner-icon { font-size: 24px; flex-shrink: 0; }
+  .install-banner-text { flex: 1; }
+  .install-banner-text strong { display: block; font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
+  .install-banner-text span { font-size: 12px; color: var(--muted); }
+  .btn-install {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-dismiss {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .dropzone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 120%, rgba(232,160,32,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .dropzone.drag-over { border-color: var(--accent); background: rgba(232,160,32,0.05); }
+
+  .dropzone-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 14px;
+    background: linear-gradient(135deg, rgba(232,160,32,0.15), rgba(196,93,26,0.15));
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(232,160,32,0.2);
+  }
+  .dropzone-icon svg { width: 28px; height: 28px; stroke: var(--accent); }
+  .dropzone p { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .dropzone small { font-size: 12px; color: var(--muted); }
+
+  .btn-upload {
+    display: inline-block;
+    margin-top: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 9px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-upload:active { opacity: 0.85; transform: scale(0.97); }
+  input[type="file"] { display: none; }
+
+  .progress-bar {
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    transition: width 0.3s;
+    border-radius: 2px;
+    margin-top: 8px;
+  }
+
+  .search-wrap { position: relative; margin-bottom: 20px; }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--muted); }
+  .search-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px 11px 38px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--accent); }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .pdf-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .pdf-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .pdf-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--accent), var(--accent2));
+    border-radius: 3px 0 0 3px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .pdf-card:hover { border-color: rgba(232,160,32,0.3); transform: translateX(2px); }
+  .pdf-card:hover::before { opacity: 1; }
+
+  .pdf-thumb {
+    width: 44px; height: 56px;
+    background: linear-gradient(160deg, #2a2720, #1e1c18);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .pdf-thumb::after {
+    content: 'PDF';
+    position: absolute;
+    bottom: 4px; left: 0; right: 0;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  .pdf-thumb svg { width: 20px; height: 20px; stroke: var(--accent); opacity: 0.8; }
+
+  .pdf-info { flex: 1; min-width: 0; }
+  .pdf-name { font-weight: 500; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+  .pdf-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; display: flex; gap: 10px; }
+
+  .pdf-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-icon {
+    width: 32px; height: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-icon svg { width: 15px; height: 15px; stroke: var(--muted); }
+  .btn-icon:hover { border-color: var(--accent); background: rgba(232,160,32,0.08); }
+  .btn-icon:hover svg { stroke: var(--accent); }
+  .btn-icon.danger:hover { border-color: var(--danger); background: rgba(192,58,42,0.08); }
+  .btn-icon.danger:hover svg { stroke: var(--danger); }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state svg { width: 48px; height: 48px; stroke: var(--border); margin-bottom: 14px; }
+  .empty-state p { font-size: 14px; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 13px; font-weight: 500;
+    z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--success); }
+  .toast.error { border-color: var(--danger); }
+  .toast-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .toast.success .toast-dot { background: var(--success); }
+  .toast.error .toast-dot { background: var(--danger); }
+
+  .viewer-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,9,8,0.95);
+    z-index: 200;
+    display: flex; flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .viewer-overlay.open { transform: translateY(0); }
+
+  .viewer-header {
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+  .viewer-title { flex: 1; font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .btn-close {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; width: 34px; height: 34px;
+    display: grid; place-items: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+  }
+  .btn-close svg { width: 16px; height: 16px; stroke: var(--text); }
+  .btn-close:hover { border-color: var(--accent); }
+
+  .btn-download-viewer {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 8px;
+    width: 34px; height: 34px;
+    display: grid; place-items: center; cursor: pointer; flex-shrink: 0;
+  }
+  .btn-download-viewer svg { width: 16px; height: 16px; stroke: #fff; }
+
+  #pdf-iframe { flex: 1; width: 100%; border: none; background: #fff; }
+
+  .stats-bar {
+    display: flex; gap: 12px; margin-bottom: 20px;
+    padding: 12px 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  }
+  .stat { text-align: center; flex: 1; }
+  .stat-val { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--accent); }
+  .stat-key { font-size: 10px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8" style="fill:rgba(255,255,255,0.3)"/></svg>
+  </div>
+  <h1>PDF <span>Vault</span></h1>
+  <div class="storage-badge" id="storage-badge">0 KB used</div>
+</header>
+
+<main>
+  <!-- Install banner (shown when PWA install is available) -->
+  <div class="install-banner" id="install-banner" style="display:none">
+    <span class="install-banner-icon">📲</span>
+    <div class="install-banner-text">
+      <strong>Install PDF Vault</strong>
+      <span>Add to home screen for app experience</span>
+    </div>
+    <button class="btn-install" id="btn-install">Install</button>
+    <button class="btn-dismiss" id="btn-dismiss">×</button>
+  </div>
+
+  <!-- Drop zone -->
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <p>Drop PDFs here</p>
+    <small>Files are saved locally on your device</small>
+    <br>
+    <button class="btn-upload" onclick="document.getElementById('file-input').click()">Choose PDF</button>
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+  <input type="file" id="file-input" accept=".pdf" multiple/>
+
+  <div class="stats-bar" id="stats-bar" style="display:none">
+    <div class="stat"><div class="stat-val" id="stat-count">0</div><div class="stat-key">FILES</div></div>
+    <div class="stat"><div class="stat-val" id="stat-size">0 KB</div><div class="stat-key">STORED</div></div>
+    <div class="stat"><div class="stat-val" id="stat-latest">—</div><div class="stat-key">LAST ADDED</div></div>
+  </div>
+
+  <div class="search-wrap" id="search-wrap" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input class="search-input" id="search-input" type="text" placeholder="Search your PDFs…" oninput="renderList()"/>
+  </div>
+
+  <div class="section-label" id="list-label" style="display:none">Your PDFs</div>
+  <div class="pdf-list" id="pdf-list"></div>
+</main>
+
+<div class="viewer-overlay" id="viewer-overlay">
+  <div class="viewer-header">
+    <button class="btn-close" onclick="closeViewer()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+    <span class="viewer-title" id="viewer-title">PDF</span>
+    <button class="btn-download-viewer" id="btn-download-viewer" title="Download">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>
+  </div>
+  <iframe id="pdf-iframe" title="PDF Viewer"></iframe>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-dot"></span>
+  <span id="toast-msg">Saved!</span>
+</div>
+
+<script>
+  // --- PWA Install prompt ---
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-banner').style.display = 'flex';
+  });
+
+  document.getElementById('btn-install').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('install-banner').style.display = 'none';
+    if (outcome === 'accepted') showToast('PDF Vault installed! 🎉', 'success');
+  });
+
+  document.getElementById('btn-dismiss').addEventListener('click', () => {
+    document.getElementById('install-banner').style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('install-banner').style.display = 'none';
+    showToast('App installed successfully!', 'success');
+  });
+
+  // --- Service Worker ---
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(console.error);
+  }
+
+  // --- IndexedDB ---
+  const DB_NAME = 'pdf-vault';
+  const STORE = 'pdfs';
+  let db;
+  let currentBlobUrl = null;
+
+  function openDB() {
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains(STORE)) {
+          d.createObjectStore(STORE, { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = e => res(e.target.result);
+      req.onerror = e => rej(e.target.error);
+    });
+  }
+
+  async function getAllPDFs() {
+    return new Promise((res, rej) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).getAll();
+      req.onsuccess = e => res(e.target.result);
+      req.onerror = e => rej(e.target.error);
+    });
+  }
+
+  async function savePDF(file) {
+    return new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = async e => {
+        const record = { id: Date.now() + Math.random(), name: file.name, size: file.size, date: new Date().toISOString(), data: e.target.result };
+        const tx = db.transaction(STORE, 'readwrite');
+        const req = tx.objectStore(STORE).add(record);
+        req.onsuccess = () => res(record);
+        req.onerror = e => rej(e.target.error);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  async function deletePDF(id) {
+    return new Promise((res, rej) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      const req = tx.objectStore(STORE).delete(id);
+      req.onsuccess = () => res();
+      req.onerror = e => rej(e.target.error);
+    });
+  }
+
+  async function getPDF(id) {
+    return new Promise((res, rej) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).get(id);
+      req.onsuccess = e => res(e.target.result);
+      req.onerror = e => rej(e.target.error);
+    });
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.className = 'toast ' + type;
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  async function renderList() {
+    const all = await getAllPDFs();
+    const query = document.getElementById('search-input').value.toLowerCase();
+    const filtered = query ? all.filter(p => p.name.toLowerCase().includes(query)) : all;
+
+    const list = document.getElementById('pdf-list');
+    const statsBar = document.getElementById('stats-bar');
+    const searchWrap = document.getElementById('search-wrap');
+    const listLabel = document.getElementById('list-label');
+
+    if (all.length === 0) {
+      statsBar.style.display = 'none'; searchWrap.style.display = 'none'; listLabel.style.display = 'none';
+      list.innerHTML = '';
+      return;
+    }
+
+    statsBar.style.display = 'flex'; searchWrap.style.display = 'block'; listLabel.style.display = 'flex';
+    const totalSize = all.reduce((s, p) => s + p.size, 0);
+    document.getElementById('stat-count').textContent = all.length;
+    document.getElementById('stat-size').textContent = formatSize(totalSize);
+    const latest = [...all].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    document.getElementById('stat-latest').textContent = formatDate(latest.date);
+    document.getElementById('storage-badge').textContent = formatSize(totalSize) + ' used';
+
+    if (filtered.length === 0) { list.innerHTML = '<div class="empty-state"><p>No results for "' + query + '"</p></div>'; return; }
+
+    const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+    list.innerHTML = sorted.map(p => `
+      <div class="pdf-card" onclick="openPDF(${JSON.stringify(p.id)})">
+        <div class="pdf-thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="pdf-info">
+          <div class="pdf-name">${escapeHtml(p.name)}</div>
+          <div class="pdf-meta"><span>${formatSize(p.size)}</span><span>${formatDate(p.date)}</span></div>
+        </div>
+        <div class="pdf-actions" onclick="event.stopPropagation()">
+          <button class="btn-icon" onclick="downloadPDF(${JSON.stringify(p.id)})" title="Download">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+          <button class="btn-icon danger" onclick="confirmDelete(${JSON.stringify(p.id)}, ${JSON.stringify(p.name)})" title="Delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+              <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function handleFiles(files) {
+    const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.endsWith('.pdf'));
+    if (pdfFiles.length === 0) { showToast('Please choose PDF files only', 'error'); return; }
+    const bar = document.getElementById('progress-bar');
+    bar.style.width = '10%';
+    let saved = 0;
+    for (let i = 0; i < pdfFiles.length; i++) {
+      try { await savePDF(pdfFiles[i]); saved++; bar.style.width = ((i + 1) / pdfFiles.length * 90 + 10) + '%'; }
+      catch(e) { console.error(e); }
+    }
+    bar.style.width = '100%';
+    setTimeout(() => { bar.style.width = '0%'; }, 600);
+    showToast(saved === 1 ? `"${pdfFiles[0].name}" saved!` : `${saved} PDFs saved!`, 'success');
+    renderList();
+  }
+
+  const dropzone = document.getElementById('dropzone');
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+  document.getElementById('file-input').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
+
+  async function openPDF(id) {
+    const record = await getPDF(id);
+    if (!record) return;
+    const blob = new Blob([record.data], { type: 'application/pdf' });
+    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    currentBlobUrl = URL.createObjectURL(blob);
+    document.getElementById('viewer-title').textContent = record.name;
+    document.getElementById('pdf-iframe').src = currentBlobUrl;
+    document.getElementById('btn-download-viewer').onclick = () => {
+      const a = document.createElement('a'); a.href = currentBlobUrl; a.download = record.name; a.click();
+    };
+    document.getElementById('viewer-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeViewer() {
+    document.getElementById('viewer-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    document.getElementById('pdf-iframe').src = '';
+    if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+  }
+
+  async function downloadPDF(id) {
+    const record = await getPDF(id);
+    if (!record) return;
+    const blob = new Blob([record.data], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = record.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Downloading…');
+  }
+
+  async function confirmDelete(id, name) {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    await deletePDF(id);
+    showToast(`"${name}" deleted`, 'error');
+    renderList();
+  }
+
+  let touchStartY = 0;
+  document.getElementById('viewer-overlay').addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+  document.getElementById('viewer-overlay').addEventListener('touchend', e => { if (e.changedTouches[0].clientY - touchStartY > 80) closeViewer(); }, { passive: true });
+
+  (async () => { db = await openDB(); renderList(); })();
+</script>
+</body>
+</html>
